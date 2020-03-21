@@ -184,3 +184,64 @@ svmAdapt$bestTune
 
 pred_svmAdapt <- predict(svmAdapt,test$Class)
 mean(svmAdapt,test$Class)
+
+#--------------------------XGBOOST------------------
+set.seed(31)
+indx1<-createDataPartition(df$Class,p=0.7,list=F)
+train<-df[indx1,]
+test<-df[-indx1,]
+
+
+train.data<-train[,-30]
+train.label<-train[,30]
+train.label<-as.integer(unlist(train.label))-1
+
+test.data<-test[,-30]
+test.label<-test[,30]
+test.label<-as.integer(unlist(test.label))-1
+
+# Transform the two data sets into xgb.Matrix
+xgb.train = xgb.DMatrix(data=as.matrix(train.data),label=train.label)
+xgb.test = xgb.DMatrix(data=as.matrix(test.data),label=test.label)
+
+
+# Define the parameters for multinomial classification
+num_class = length(levels(df$Class))
+params = list(
+  booster="gbtree",
+  eta=0.001,
+  max_depth=5,
+  gamma=3,
+  subsample=0.7,
+  colsample_bytree=1,
+  objective="multi:softprob",
+  eval_metric="mlogloss",
+  num_class=num_class
+)
+
+# Train the XGBoost classifer
+xgb.fit=xgb.train(
+  params=params,
+  data=xgb.train,
+  nrounds=10000,
+  nthreads=4,
+  early_stopping_rounds=10,
+  watchlist=list(val1=xgb.train,val2=xgb.test),
+  verbose=2
+)
+# Review the final model and results
+xgb.fit
+
+# Predict outcomes with the test data
+xgb.pred = predict(xgb.fit,as.matrix(test.data),reshape=T)
+xgb.pred = as.data.frame(xgb.pred)
+colnames(xgb.pred) = levels(df$Class)
+
+
+# Use the predicted label with the highest probability
+xgb.pred$prediction = apply(xgb.pred,1,function(x) colnames(xgb.pred)[which.max(x)])
+xgb.pred$label = levels(df$Class)[test.label+1]
+
+# Calculate the final accuracy
+result = sum(xgb.pred$prediction==xgb.pred$label)/nrow(xgb.pred)
+print(paste("Final Accuracy =",sprintf("%1.2f%%", 100*result)))
