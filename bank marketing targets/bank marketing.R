@@ -159,3 +159,14 @@ plot(gbm_model)
 gbm.predict <- predict(gbm_model,test)
 mean(gbm.predict==test$target)
 confusionMatrix(gbm.predict, test$target)
+
+
+
+
+
+
+
+
+
+
+
