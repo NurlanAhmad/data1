@@ -7,7 +7,6 @@ library(xgboost)
 library(janitor)
 library(Boruta)
 library(corrplot)
-library(plyr)
 
 #Parallel processing
 #----------------------------
